@@ -59,22 +59,18 @@ export const login = async (
   let user = await prismaClient.user.findFirst({ where: { email } });
 
   if (!user) {
-    return next(
-      new NotFoundException("User Not Found!", ErrorCode.USER_NOT_FOUND)
-    );
+    throw new NotFoundException("User Not Found!", ErrorCode.USER_NOT_FOUND);
   }
 
   if (!compareSync(password, user.password)) {
-    return next(
-      new InvalidCrendetialsException(
-        "Invalid crendetials",
-        ErrorCode.INVALID_CRENDETIALS
-      )
+    throw new InvalidCrendetialsException(
+      "Invalid crendetials",
+      ErrorCode.INVALID_CRENDETIALS
     );
   }
 
   if (!JWT_SECRET) {
-    return new Error("JWT secret is missing in .env !");
+    throw new Error("JWT secret is missing in .env !");
   }
 
   const token = jwt.sign(
@@ -84,5 +80,7 @@ export const login = async (
     JWT_SECRET
   );
 
-  return res.status(200).json({ user, token });
+  const { password: _, ...publicUser } = user;
+
+  return res.status(200).json({ publicUser, token });
 };
