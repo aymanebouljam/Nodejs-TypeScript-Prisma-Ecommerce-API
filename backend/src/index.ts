@@ -4,9 +4,7 @@ import rootRouter from "./routes";
 import { PrismaClient } from "@prisma/client";
 import { errorMiddleware } from "./middlewares/errors";
 
-export const prismaClient = new PrismaClient({
-  log: ["query"],
-});
+export const prismaClient = new PrismaClient();
 
 const app: Express = express();
 

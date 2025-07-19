@@ -7,34 +7,48 @@ import { BadRequestsException } from "../exceptions/badRequestsException";
 import { ErrorCode } from "../exceptions/root";
 import { NotFoundException } from "../exceptions/notFoundException";
 import { InvalidCrendetialsException } from "../exceptions/invalidCredentialsException";
+import { Validation } from "../exceptions/validation";
+import { signUpSchema } from "../schemas/users";
 
 export const signup = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  const { name, email, password } = req.body;
+  try {
+    signUpSchema.parse(req.body);
 
-  let user = await prismaClient.user.findFirst({ where: { email } });
+    const { name, email, password } = req.body;
 
-  if (user) {
+    let user = await prismaClient.user.findFirst({ where: { email } });
+
+    if (user) {
+      return next(
+        new BadRequestsException(
+          "User already exists!",
+          ErrorCode.USER_ALREADY_EXISTS
+        )
+      );
+    }
+
+    user = await prismaClient.user.create({
+      data: {
+        name,
+        email,
+        password: hashSync(password, 10),
+      },
+    });
+
+    res.status(200).json(user);
+  } catch (err: any) {
     return next(
-      new BadRequestsException(
-        "User already exists!",
-        ErrorCode.USER_ALREADY_EXISTS
+      new Validation(
+        "Failed to validate Entries",
+        ErrorCode.Unprocessable_Entity,
+        err?.issues
       )
     );
   }
-
-  user = await prismaClient.user.create({
-    data: {
-      name,
-      email,
-      password: hashSync(password, 10),
-    },
-  });
-
-  res.status(200).json(user);
 };
 
 export const login = async (
