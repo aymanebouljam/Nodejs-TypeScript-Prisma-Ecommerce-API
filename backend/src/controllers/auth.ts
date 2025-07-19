@@ -7,48 +7,46 @@ import { BadRequestsException } from "../exceptions/badRequestsException";
 import { ErrorCode } from "../exceptions/root";
 import { NotFoundException } from "../exceptions/notFoundException";
 import { InvalidCrendetialsException } from "../exceptions/invalidCredentialsException";
-import { Validation } from "../exceptions/validation";
 import { signUpSchema } from "../schemas/users";
+import { Validation } from "../exceptions/validation";
 
-export const signup = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    signUpSchema.parse(req.body);
+export const signup = async (req: Request, res: Response) => {
+  const result: any = signUpSchema.safeParse(req.body);
 
-    const { name, email, password } = req.body;
-
-    let user = await prismaClient.user.findFirst({ where: { email } });
-
-    if (user) {
-      return next(
-        new BadRequestsException(
-          "User already exists!",
-          ErrorCode.USER_ALREADY_EXISTS
-        )
-      );
-    }
-
-    user = await prismaClient.user.create({
-      data: {
-        name,
-        email,
-        password: hashSync(password, 10),
-      },
-    });
-
-    res.status(200).json(user);
-  } catch (err: any) {
-    return next(
-      new Validation(
-        "Failed to validate Entries",
-        ErrorCode.Unprocessable_Entity,
-        err?.issues
-      )
+  if (!result.success) {
+    throw new Validation(
+      "Validation failed",
+      ErrorCode.Unprocessable_Entity,
+      result?.error?.issues
     );
   }
+
+  const { name, email, password } = req.body;
+
+  const isFound = await prismaClient.user.findFirst({ where: { email } });
+
+  if (isFound) {
+    throw new BadRequestsException(
+      "User already exists!",
+      ErrorCode.USER_ALREADY_EXISTS
+    );
+  }
+
+  const user = await prismaClient.user.create({
+    data: {
+      name,
+      email,
+      password: hashSync(password, 10),
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      createdAt: true,
+    },
+  });
+
+  res.status(200).json(user);
 };
 
 export const login = async (
