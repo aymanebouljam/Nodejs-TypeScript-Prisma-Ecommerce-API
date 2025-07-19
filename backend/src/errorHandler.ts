@@ -3,9 +3,10 @@ import { ErrorCode, HttpException } from "./exceptions/root";
 import { InternalException } from "./exceptions/internalException";
 
 export const errorHandler =
-  (method: Function) => (req: Request, res: Response, next: NextFunction) => {
+  (method: Function) =>
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
-      method(req, res, next);
+      await method(req, res, next);
     } catch (err: any) {
       let exception: HttpException;
 
