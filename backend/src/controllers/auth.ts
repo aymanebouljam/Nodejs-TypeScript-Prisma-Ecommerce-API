@@ -9,6 +9,7 @@ import { NotFoundException } from "../exceptions/notFoundException";
 import { InvalidCrendetialsException } from "../exceptions/invalidCredentialsException";
 import { signUpSchema } from "../schemas/users";
 import { Validation } from "../exceptions/validation";
+import { AuthRequest } from "../types/authenticatedRequest";
 
 export const signup = async (req: Request, res: Response) => {
   const result: any = signUpSchema.safeParse(req.body);
@@ -84,3 +85,6 @@ export const login = async (
 
   return res.status(200).json({ publicUser, token });
 };
+
+export const me = (req: AuthRequest, res: Response) =>
+  res.status(200).json(req.user);

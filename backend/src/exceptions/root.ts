@@ -4,6 +4,7 @@ export enum ErrorCode {
   INVALID_CRENDETIALS = 1003,
   Unprocessable_Entity = 2001,
   INTERNAL_EXCEPTION = 3001,
+  UNAUTHORIZED = 4001,
 }
 
 export class HttpException extends Error {
