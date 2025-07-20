@@ -10,7 +10,7 @@ export const errorMiddleware = (
   const statusCode = err.statusCode ?? 500;
   const message = err.message ?? "Internal Server Error";
   const errorCode = err.errorCode ?? "UNKNOWN_ERROR";
-  const errors = err.errors ?? null;
+  const errors = err.errors ?? "";
 
   return res.status(statusCode).json({
     message,
