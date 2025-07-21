@@ -11,11 +11,7 @@ export const adminMiddleware = async (
 ) => {
   if (!req.user || req.user.role !== Role.ADMIN) {
     return next(
-      new UnAuthorizedException(
-        "Unauthorized user",
-        ErrorCode.UNAUTHORIZED,
-        null
-      )
+      new UnAuthorizedException("Unauthorized user", ErrorCode.UNAUTHORIZED)
     );
   }
 

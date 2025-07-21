@@ -1,11 +1,12 @@
 import { Request, Response } from "express";
-import { AddressSchema } from "../schemas/users";
+import { AddressSchema, UpdateUserSchema } from "../schemas/users";
 import { Validation } from "../exceptions/validation";
 import { ErrorCode } from "../exceptions/root";
 import { prismaClient } from "..";
 import { NotFoundException } from "../exceptions/notFoundException";
 import { AuthRequest } from "../types/authenticatedRequest";
 import { BadRequestsException } from "../exceptions/badRequestsException";
+import { UnAuthorizedException } from "../exceptions/unAuthorized";
 
 export const createAddress = async (req: AuthRequest, res: Response) => {
   if (!req.user) {
@@ -44,7 +45,7 @@ export const deleteAddress = async (req: Request, res: Response) => {
   } catch (err) {
     throw new NotFoundException(
       "Address not found",
-      ErrorCode.PRODUCT_NOT_FOUND
+      ErrorCode.ADDRESS_NOT_FOUND
     );
   }
 };
@@ -57,4 +58,51 @@ export const listAddress = async (req: AuthRequest, res: Response) => {
   });
 
   return res.status(200).json(addresses);
+};
+
+export const updateUser = async (req: AuthRequest, res: Response) => {
+  const result = UpdateUserSchema.safeParse(req.body);
+  if (!result.success) {
+    throw new Validation(
+      "Validation Failed",
+      ErrorCode.Unprocessable_Entity,
+      result?.error?.issues
+    );
+  }
+
+  const shippingAddress = await prismaClient.address.findFirst({
+    where: { id: req.body?.defaultShippingAddress },
+  });
+  const billingAddress = await prismaClient.address.findFirst({
+    where: { id: req.body?.defaultBillingAddress },
+  });
+
+  if (!shippingAddress || !billingAddress) {
+    throw new NotFoundException(
+      "Address Not found",
+      ErrorCode.ADDRESS_NOT_FOUND
+    );
+  }
+
+  if (
+    !req.user ||
+    req.user.id !== shippingAddress.userId ||
+    req.user.id !== billingAddress.userId
+  ) {
+    throw new UnAuthorizedException("Unauthorized", ErrorCode.UNAUTHORIZED);
+  }
+
+  try {
+    const updatedUser = await prismaClient.user.update({
+      where: { id: +req.user.id },
+      data: req.body,
+    });
+
+    return res.status(200).json(updatedUser);
+  } catch (err) {
+    throw new BadRequestsException(
+      "Failed to update user",
+      ErrorCode.INVALID_CRENDETIALS
+    );
+  }
 };

@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from "express";
+import { NextFunction, Response } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { JWT_SECRET } from "../secrets";
 import { UnAuthorizedException } from "../exceptions/unAuthorized";
@@ -17,11 +17,7 @@ export const authMiddleware = async (
 
   if (!authHeader || !authHeader.startsWith("Bearer")) {
     return next(
-      new UnAuthorizedException(
-        "No token provided",
-        ErrorCode.UNAUTHORIZED,
-        null
-      )
+      new UnAuthorizedException("No token provided", ErrorCode.UNAUTHORIZED)
     );
   }
 
@@ -49,7 +45,7 @@ export const authMiddleware = async (
     return next();
   } catch (error) {
     return next(
-      new UnAuthorizedException("Invalid token", ErrorCode.UNAUTHORIZED, error)
+      new UnAuthorizedException("Invalid token", ErrorCode.UNAUTHORIZED)
     );
   }
 };
