@@ -5,6 +5,7 @@ import { ErrorCode } from "../exceptions/root";
 import { prismaClient } from "..";
 import { NotFoundException } from "../exceptions/notFoundException";
 import { AuthRequest } from "../types/authenticatedRequest";
+import { BadRequestsException } from "../exceptions/badRequestsException";
 
 export const createAddress = async (req: AuthRequest, res: Response) => {
   if (!req.user) {
@@ -30,5 +31,30 @@ export const createAddress = async (req: AuthRequest, res: Response) => {
     return res.status(201).json(address);
   }
 };
-export const deleteAddress = (req: Request, res: Response) => {};
-export const listAddress = (req: Request, res: Response) => {};
+export const deleteAddress = async (req: Request, res: Response) => {
+  if (!req.params.id) {
+    throw new BadRequestsException("Invalid ID", ErrorCode.INVALID_CRENDETIALS);
+  }
+
+  try {
+    const address = await prismaClient.address.delete({
+      where: { id: +req.params.id },
+    });
+    return res.status(200).json(address);
+  } catch (err) {
+    throw new NotFoundException(
+      "Address not found",
+      ErrorCode.PRODUCT_NOT_FOUND
+    );
+  }
+};
+export const listAddress = async (req: AuthRequest, res: Response) => {
+  if (!req.user) {
+    throw new NotFoundException("User not found", ErrorCode.USER_NOT_FOUND);
+  }
+  const addresses = await prismaClient.address.findMany({
+    where: { id: req.user.id },
+  });
+
+  return res.status(200).json(addresses);
+};
