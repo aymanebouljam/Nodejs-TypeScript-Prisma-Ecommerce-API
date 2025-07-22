@@ -5,6 +5,8 @@ import { Validation } from "../exceptions/validation";
 import { ErrorCode } from "../exceptions/root";
 import { prismaClient } from "..";
 import { NotFoundException } from "../exceptions/notFoundException";
+import { BadRequestsException } from "../exceptions/badRequestsException";
+import { UnAuthorizedException } from "../exceptions/unAuthorized";
 
 export const addItemToCart = async (req: AuthRequest, res: Response) => {
   const result = CreateCartSchema.safeParse(req.body);
@@ -17,7 +19,10 @@ export const addItemToCart = async (req: AuthRequest, res: Response) => {
   }
 
   if (!req.user) {
-    throw new NotFoundException("User not found", ErrorCode.USER_NOT_FOUND);
+    throw new UnAuthorizedException(
+      "Unauthorized user",
+      ErrorCode.UNAUTHORIZED
+    );
   }
 
   const product = await prismaClient.product.findUnique({
@@ -41,6 +46,39 @@ export const addItemToCart = async (req: AuthRequest, res: Response) => {
 
   return res.status(201).json(cartItem);
 };
-export const deleteItemFromCart = async (req: AuthRequest, res: Response) => {};
+export const deleteItemFromCart = async (req: AuthRequest, res: Response) => {
+  if (!req.params.id) {
+    throw new BadRequestsException("Invalid Id", ErrorCode.INVALID_CRENDETIALS);
+  }
+
+  if (!req.user) {
+    throw new UnAuthorizedException(
+      "Unauthorized user",
+      ErrorCode.UNAUTHORIZED
+    );
+  }
+
+  const CartItem = await prismaClient.cartItem.findUniqueOrThrow({
+    where: {
+      id: +req.params.id,
+    },
+  });
+
+
+  if (CartItem.userId !== req.user.id) {
+    throw new UnAuthorizedException(
+      "Unauthorized user",
+      ErrorCode.UNAUTHORIZED
+    );
+  }
+
+  const deletedCartItem = await prismaClient.cartItem.delete({
+    where: {
+      id: +req.params.id,
+    },
+  });
+
+  return res.status(200).json(deletedCartItem);
+};
 export const changeQuantity = async (req: AuthRequest, res: Response) => {};
 export const getCart = async (req: AuthRequest, res: Response) => {};
