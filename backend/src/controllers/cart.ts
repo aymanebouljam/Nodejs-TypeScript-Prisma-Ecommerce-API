@@ -1,13 +1,12 @@
 import { Response } from "express";
 import { AuthRequest } from "../types/authenticatedRequest";
-import { CreateCartSchema } from "../schemas/cart";
+import { CreateCartSchema, UpdateCartQuantitySchema } from "../schemas/cart";
 import { Validation } from "../exceptions/validation";
 import { ErrorCode } from "../exceptions/root";
 import { prismaClient } from "..";
 import { NotFoundException } from "../exceptions/notFoundException";
 import { BadRequestsException } from "../exceptions/badRequestsException";
 import { UnAuthorizedException } from "../exceptions/unAuthorized";
-
 
 export const addItemToCart = async (req: AuthRequest, res: Response) => {
   const result = CreateCartSchema.safeParse(req.body);
@@ -100,6 +99,40 @@ export const deleteItemFromCart = async (req: AuthRequest, res: Response) => {
   return res.status(200).json(deletedCartItem);
 };
 export const changeQuantity = async (req: AuthRequest, res: Response) => {
-    
+  const result = UpdateCartQuantitySchema.safeParse(req.body);
+
+  if (!result.success) {
+    throw new Validation(
+      "Validation Failed",
+      ErrorCode.Unprocessable_Entity,
+      result?.error?.issues
+    );
+  }
+
+  const cart = await prismaClient.cartItem.findUnique({
+    where: {
+      id: +req.params?.id,
+    },
+  });
+
+  if (cart?.userId !== req.user?.id) {
+    throw new UnAuthorizedException(
+      "Unauthorized user",
+      ErrorCode.UNAUTHORIZED
+    );
+  }
+
+  const updatedCart = await prismaClient.cartItem.update({
+    where: { id: +req.params?.id },
+    data: { quantity: result.data.quantity },
+  });
+
+  return res.status(200).json(updatedCart);
 };
-export const getCart = async (req: AuthRequest, res: Response) => {};
+export const getCart = async (req: AuthRequest, res: Response) => {
+  const carts = await prismaClient.cartItem.findMany({
+    where: { userId: req.user?.id },
+  });
+
+  return res.status(200).json(carts)
+};
