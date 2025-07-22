@@ -8,6 +8,7 @@ import { NotFoundException } from "../exceptions/notFoundException";
 import { BadRequestsException } from "../exceptions/badRequestsException";
 import { UnAuthorizedException } from "../exceptions/unAuthorized";
 
+
 export const addItemToCart = async (req: AuthRequest, res: Response) => {
   const result = CreateCartSchema.safeParse(req.body);
   if (!result.success) {
@@ -34,6 +35,25 @@ export const addItemToCart = async (req: AuthRequest, res: Response) => {
       "Product not found",
       ErrorCode.PRODUCT_NOT_FOUND
     );
+  }
+
+  const cart = await prismaClient.cartItem.findFirst({
+    where: {
+      productId: result.data.productId,
+    },
+  });
+
+  if (cart) {
+    const updatedCartItem = await prismaClient.cartItem.update({
+      where: {
+        id: cart.id,
+      },
+      data: {
+        quantity: cart.quantity + result.data.quantity,
+      },
+    });
+
+    return res.status(200).json(updatedCartItem);
   }
 
   const cartItem = await prismaClient.cartItem.create({
@@ -64,7 +84,6 @@ export const deleteItemFromCart = async (req: AuthRequest, res: Response) => {
     },
   });
 
-
   if (CartItem.userId !== req.user.id) {
     throw new UnAuthorizedException(
       "Unauthorized user",
@@ -80,5 +99,7 @@ export const deleteItemFromCart = async (req: AuthRequest, res: Response) => {
 
   return res.status(200).json(deletedCartItem);
 };
-export const changeQuantity = async (req: AuthRequest, res: Response) => {};
+export const changeQuantity = async (req: AuthRequest, res: Response) => {
+    
+};
 export const getCart = async (req: AuthRequest, res: Response) => {};
