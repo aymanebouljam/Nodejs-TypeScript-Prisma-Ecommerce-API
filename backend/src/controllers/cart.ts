@@ -132,6 +132,7 @@ export const changeQuantity = async (req: AuthRequest, res: Response) => {
 export const getCart = async (req: AuthRequest, res: Response) => {
   const carts = await prismaClient.cartItem.findMany({
     where: { userId: req.user?.id },
+    include: {product: true}
   });
 
   return res.status(200).json(carts)
