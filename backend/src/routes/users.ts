@@ -11,6 +11,7 @@ import {
   listAllOrder,
   listUserOrder,
   listUsers,
+  searchProducts,
   updateUser,
 } from "../controllers/users";
 import { adminMiddleware } from "../middlewares/admin";
@@ -41,6 +42,11 @@ usersRoutes.put(
   "/status/:id",
   [authMiddleware, adminMiddleware],
   errorHandler(changeStatus)
+);
+usersRoutes.get(
+  "/search",
+  [authMiddleware, adminMiddleware],
+  errorHandler(searchProducts)
 );
 usersRoutes.get(
   "/:id",
