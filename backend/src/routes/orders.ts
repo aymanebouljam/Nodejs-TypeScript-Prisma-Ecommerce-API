@@ -6,7 +6,7 @@ import {
   createOrder,
   getOrderById,
   ListOrders,
-} from "../controllers/orderds";
+} from "../controllers/orders";
 
 const ordersRoutes: Router = Router();
 

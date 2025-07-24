@@ -39,8 +39,6 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
         .json({ message: "No default shipping address was set" });
     }
 
-
-
     const order = await tx.order.create({
       data: {
         userId: +req.user!.id!,
@@ -51,6 +49,7 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
             return {
               productId: item.productId,
               quantity: item.quantity,
+              price: item.product.price,
             };
           }),
         },
@@ -69,7 +68,7 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
       },
     });
 
-    return res.status(201).json(order);
+    return res.status(201).json({ ...order, status: orderEvent.status });
   });
 };
 export const ListOrders = async (req: AuthRequest, res: Response) => {};
