@@ -4,6 +4,8 @@ import rootRouter from "./routes";
 import { PrismaClient } from "@prisma/client";
 import { errorMiddleware } from "./middlewares/errors";
 
+const app: Express = express();
+app.use(express.json());
 export const prismaClient = new PrismaClient().$extends({
   result: {
     address: {
@@ -22,10 +24,6 @@ export const prismaClient = new PrismaClient().$extends({
     },
   },
 });
-
-const app: Express = express();
-
-app.use(express.json());
 
 app.use("/api", rootRouter);
 
