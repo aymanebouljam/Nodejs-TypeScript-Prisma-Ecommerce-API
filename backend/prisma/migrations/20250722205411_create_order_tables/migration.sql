@@ -5,7 +5,7 @@ CREATE TYPE "Status" AS ENUM ('PENDING', 'ACCEPTED', 'OUT_FOR_DELIVERY', 'DELIVE
 CREATE TABLE "orders" (
     "id" SERIAL NOT NULL,
     "userId" INTEGER NOT NULL,
-    "netAmount" DECIMAL(65,30) NOT NULL,
+    "netAmount" DECIMAL(10,2) NOT NULL,
     "address" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -19,6 +19,7 @@ CREATE TABLE "order_products" (
     "orderId" INTEGER NOT NULL,
     "productId" INTEGER NOT NULL,
     "quantity" INTEGER NOT NULL,
+    "price" DECIMAL NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

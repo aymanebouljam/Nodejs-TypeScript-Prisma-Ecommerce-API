@@ -58,7 +58,7 @@ model Product {
   id Int @id @default(autoincrement())
   name String
   description String @db.Text
-  price Decimal
+  price Decimal @db.Decimal(10, 2)
   tags String
   createdAt DateTime @default(now())
   updatedAt DateTime  @updatedAt
@@ -87,7 +87,7 @@ model Order {
   id Int @id @default (autoincrement())
   userId Int
   user User @relation(fields: [userId], references:  [id])
-  netAmount Decimal
+  netAmount Decimal @db.Decimal(10, 2)
   address String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -106,6 +106,7 @@ model OrderProduct {
   productId Int
   product   Product @relation(fields: [productId], references: [id])
   quantity Int
+  price Decimal @db.Decimal(10, 2)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
