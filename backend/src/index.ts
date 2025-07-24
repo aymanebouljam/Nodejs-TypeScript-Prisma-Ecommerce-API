@@ -4,7 +4,24 @@ import rootRouter from "./routes";
 import { PrismaClient } from "@prisma/client";
 import { errorMiddleware } from "./middlewares/errors";
 
-export const prismaClient = new PrismaClient();
+export const prismaClient = new PrismaClient().$extends({
+  result: {
+    address: {
+      formattedAddress: {
+        needs: {
+          lineOne: true,
+          lineTwo: true,
+          city: true,
+          country: true,
+          zipCode: true,
+        },
+        compute: (address) => {
+          return `${address.lineOne}, ${address.lineTwo}, ${address.city}, ${address.country} - ${address.zipCode}`;
+        },
+      },
+    },
+  },
+});
 
 const app: Express = express();
 
