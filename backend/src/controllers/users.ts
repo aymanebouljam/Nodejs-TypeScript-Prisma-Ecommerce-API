@@ -194,3 +194,49 @@ export const changeUserRole = async (
     );
   }
 };
+
+export const listAllOrder = async (req: AuthRequest, res: Response) => {
+  const skip = Number(req.query.skip) || 0;
+  const orders = await prismaClient.order.findMany({
+    skip,
+    take: 5,
+  });
+
+  return res.status(200).json(orders);
+};
+
+export const changeStatus = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  const order = await prismaClient.order.findUnique({
+    where: {
+      id: Number(req.params.id),
+    },
+  });
+
+  if (!order) {
+    return next(
+      new NotFoundException("Order not found", ErrorCode.PRODUCT_NOT_FOUND)
+    );
+  }
+  const updatedEvent = await prismaClient.orderEvent.create({
+    data: {
+      orderId: Number(req.params.id),
+      status: req.body.status,
+    },
+  });
+
+  return res.status(201).json({ ...order, status: updatedEvent.status });
+};
+
+export const listUserOrder = async (req: AuthRequest, res: Response) => {
+  const skip = Number(req.query.skip) || 0;
+  const orders = await prismaClient.order.findMany({
+    where: { userId: Number(req.params.id) },
+    skip,
+    take: 5,
+  });
+  return res.status(200).json(orders);
+};
