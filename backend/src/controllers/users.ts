@@ -240,3 +240,33 @@ export const listUserOrder = async (req: AuthRequest, res: Response) => {
   });
   return res.status(200).json(orders);
 };
+
+export const searchProducts = async (req: AuthRequest, res: Response) => {
+  const skip = Number(req.query.skip) || 0;
+  const products = await prismaClient.product.findMany({
+    where: {
+      OR: [
+        {
+          name: {
+            search: req.query.q?.toString(),
+          },
+        },
+        {
+          description: {
+            search: req.query.q?.toString(),
+          },
+        },
+
+        {
+          tags: {
+            search: req.query.q?.toString(),
+          },
+        },
+      ],
+    },
+    skip,
+    take: 5,
+  });
+
+  return res.status(200).json(products);
+};
