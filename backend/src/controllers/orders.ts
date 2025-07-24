@@ -73,8 +73,14 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
   });
 };
 export const ListOrders = async (req: AuthRequest, res: Response) => {
+  if (!req.user || !req.user.id) {
+    throw new UnAuthorizedException(
+      "Unauthorized User",
+      ErrorCode.UNAUTHORIZED
+    );
+  }
   const orders = await prismaClient.order.findMany({
-    where: { userId: req.user?.id },
+    where: { userId: req.user.id },
     include: {
       products: true,
       events: true,
@@ -88,14 +94,32 @@ export const cancelOrder = async (
   next: NextFunction
 ) => {
   try {
-    const orderEvent = await prismaClient.orderEvent.create({
-      data: {
-        orderId: +req.params.id,
-        status: "CANCELLED",
-      },
-    });
+    if (!req.user || !req.user.id) {
+      return next(
+        new UnAuthorizedException("Unauthorized User", ErrorCode.UNAUTHORIZED)
+      );
+    }
 
-    return res.status(200).json({ message: `Order is ${orderEvent?.status}` });
+    await prismaClient.$transaction(async (tx) => {
+      const order = await tx.order.findUniqueOrThrow({
+        where: {
+          id: +req.params.id,
+        },
+      });
+
+      if (order.userId !== req.user!.id) {
+        return next(
+          new UnAuthorizedException("User unauthorized", ErrorCode.UNAUTHORIZED)
+        );
+      }
+      const orderEvent = await prismaClient.orderEvent.create({
+        data: {
+          orderId: +req.params.id,
+          status: "CANCELLED",
+        },
+      });
+      return res.status(200).json({ ...order, status: orderEvent.status });
+    });
   } catch (err) {
     return next(
       new BadRequestsException(
@@ -111,6 +135,11 @@ export const getOrderById = async (
   next: NextFunction
 ) => {
   try {
+    if (!req.user || !req.user.id) {
+      return next(
+        new UnAuthorizedException("Unauthorized User", ErrorCode.UNAUTHORIZED)
+      );
+    }
     const order = await prismaClient.order.findUniqueOrThrow({
       where: {
         id: +req.params?.id,
@@ -120,6 +149,12 @@ export const getOrderById = async (
         events: true,
       },
     });
+
+    if (order.userId !== req.user.id) {
+      return next(
+        new UnAuthorizedException("Unauthorized User", ErrorCode.UNAUTHORIZED)
+      );
+    }
 
     return res.status(200).json(order);
   } catch (err) {
