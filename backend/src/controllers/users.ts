@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { AddressSchema, UpdateUserSchema } from "../schemas/users";
 import { Validation } from "../exceptions/validation";
 import { ErrorCode } from "../exceptions/root";
@@ -7,6 +7,7 @@ import { NotFoundException } from "../exceptions/notFoundException";
 import { AuthRequest } from "../types/authenticatedRequest";
 import { BadRequestsException } from "../exceptions/badRequestsException";
 import { UnAuthorizedException } from "../exceptions/unAuthorized";
+import { InternalException } from "../exceptions/internalException";
 
 export const createAddress = async (req: AuthRequest, res: Response) => {
   if (!req.user) {
@@ -103,6 +104,93 @@ export const updateUser = async (req: AuthRequest, res: Response) => {
     throw new BadRequestsException(
       "Failed to update user",
       ErrorCode.INVALID_CRENDETIALS
+    );
+  }
+};
+
+export const listUsers = async (req: AuthRequest, res: Response) => {
+  let skip = 0;
+  if (!isNaN(Number(req.query.skip))) {
+    skip = Number(req.query.skip);
+  }
+  const users = await prismaClient.user.findMany({
+    skip,
+    take: 5,
+    select: {
+      id: true,
+      name: true,
+      role: true,
+      createdAt: true,
+    },
+  });
+  return res.status(200).json(users);
+};
+export const getUserByid = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  const user = await prismaClient.user.findUnique({
+    where: {
+      id: Number(req.params.id),
+    },
+    select: {
+      id: true,
+      name: true,
+      role: true,
+      createdAt: true,
+      addresses: true,
+    },
+  });
+
+  if (!user) {
+    return next(
+      new NotFoundException("User not found", ErrorCode.USER_NOT_FOUND)
+    );
+  }
+
+  return res.status(200).json(user);
+};
+export const changeUserRole = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.body || !req.body.role) {
+      return next(
+        new Validation(
+          "Role field is missing",
+          ErrorCode.Unprocessable_Entity,
+          null
+        )
+      );
+    }
+    const user = await prismaClient.user.update({
+      where: {
+        id: Number(req.params.id),
+      },
+      data: {
+        role: req.body.role,
+      },
+      select: {
+        id: true,
+        name: true,
+        role: true,
+        createdAt: true,
+        addresses: true,
+      },
+    });
+    return res.status(200).json(user);
+  } catch (err: any) {
+    return next(
+      err instanceof NotFoundException
+        ? err
+        : new InternalException(
+            "Somethin went wrong",
+            ErrorCode.INTERNAL_EXCEPTION,
+            err?.message
+          )
     );
   }
 };
