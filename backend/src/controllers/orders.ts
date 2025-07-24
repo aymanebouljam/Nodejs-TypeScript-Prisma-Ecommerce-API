@@ -1,8 +1,9 @@
-import { Response } from "express";
+import { NextFunction, Response } from "express";
 import { AuthRequest } from "../types/authenticatedRequest";
 import { prismaClient } from "..";
 import { UnAuthorizedException } from "../exceptions/unAuthorized";
 import { ErrorCode } from "../exceptions/root";
+import { BadRequestsException } from "../exceptions/badRequestsException";
 
 export const createOrder = async (req: AuthRequest, res: Response) => {
   if (!req.user || !req.user.id || !req.user.defaultShippingAddress) {
@@ -71,6 +72,62 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
     return res.status(201).json({ ...order, status: orderEvent.status });
   });
 };
-export const ListOrders = async (req: AuthRequest, res: Response) => {};
-export const cancelOrder = async (req: AuthRequest, res: Response) => {};
-export const getOrderById = async (req: AuthRequest, res: Response) => {};
+export const ListOrders = async (req: AuthRequest, res: Response) => {
+  const orders = await prismaClient.order.findMany({
+    where: { userId: req.user?.id },
+    include: {
+      products: true,
+      events: true,
+    },
+  });
+  return res.status(200).json(orders);
+};
+export const cancelOrder = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const orderEvent = await prismaClient.orderEvent.create({
+      data: {
+        orderId: +req.params.id,
+        status: "CANCELLED",
+      },
+    });
+
+    return res.status(200).json({ message: `Order is ${orderEvent?.status}` });
+  } catch (err) {
+    return next(
+      new BadRequestsException(
+        "Invalid user or ID",
+        ErrorCode.INVALID_CRENDETIALS
+      )
+    );
+  }
+};
+export const getOrderById = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const order = await prismaClient.order.findUniqueOrThrow({
+      where: {
+        id: +req.params?.id,
+      },
+      include: {
+        products: true,
+        events: true,
+      },
+    });
+
+    return res.status(200).json(order);
+  } catch (err) {
+    return next(
+      new BadRequestsException(
+        "Invalid user or ID",
+        ErrorCode.INVALID_CRENDETIALS
+      )
+    );
+  }
+};
